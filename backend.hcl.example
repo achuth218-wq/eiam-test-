@@ -1,0 +1,6 @@
+# Copy to backend.hcl for local runs:  terraform init -backend-config=backend.hcl
+bucket       = "my-terraform-state-bucket"
+key          = "kong-konnect/eapim-internal-dev/terraform.tfstate"
+region       = "ap-south-1"
+encrypt      = true
+use_lockfile = true # S3-native state locking (Terraform >= 1.10)

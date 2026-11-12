@@ -1,0 +1,14 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    { "label": "Konnect: deploy (plan → confirm → apply)", "type": "shell", "command": "./deploy.sh", "group": { "kind": "build", "isDefault": true }, "problemMatcher": [] },
+    { "label": "Konnect: plan only",       "type": "shell", "command": "./deploy.sh plan",    "problemMatcher": [] },
+    { "label": "Konnect: status",          "type": "shell", "command": "./deploy.sh status",  "problemMatcher": [] },
+    { "label": "Konnect: set token",       "type": "shell", "command": "./deploy.sh token",   "problemMatcher": [] },
+    { "label": "Konnect: smoke test",      "type": "shell", "command": "./deploy.sh smoke ${input:proxyUrl}", "problemMatcher": [] },
+    { "label": "Konnect: destroy",         "type": "shell", "command": "./deploy.sh destroy", "problemMatcher": [] }
+  ],
+  "inputs": [
+    { "id": "proxyUrl", "type": "promptString", "description": "Data plane proxy URL", "default": "http://localhost:8000" }
+  ]
+}
