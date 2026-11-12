@@ -1,0 +1,16 @@
+# APIs to publish on Kong Konnect.
+# Each entry becomes one Gateway Service + one Route (path: /<name>) on its control plane.
+# Optional per-API keys: path (route path, default "/<name>"), tags (list).
+apis:
+  - { name: jsonplaceholder, control_plane: eapim-internal-dev, upstream: "https://jsonplaceholder.typicode.com" }
+  - { name: catfact,         control_plane: eapim-internal-dev, upstream: "https://catfact.ninja" }
+  - { name: chucknorris,     control_plane: eapim-internal-dev, upstream: "https://api.chucknorris.io" }
+  - { name: dog,             control_plane: eapim-internal-dev, upstream: "https://dog.ceo/api" }
+  - { name: agify,           control_plane: eapim-internal-dev, upstream: "https://api.agify.io" }
+  - { name: genderize,       control_plane: eapim-internal-dev, upstream: "https://api.genderize.io" }
+  - { name: nationalize,     control_plane: eapim-internal-dev, upstream: "https://api.nationalize.io" }
+  - { name: open-meteo,      control_plane: eapim-internal-dev, upstream: "https://api.open-meteo.com/v1" }
+  - { name: restcountries,   control_plane: eapim-internal-dev, upstream: "https://restcountries.com/v3.1" }
+  - { name: pokeapi,         control_plane: eapim-internal-dev, upstream: "https://pokeapi.co/api/v2" }
+  - { name: jokes,           control_plane: eapim-internal-dev, upstream: "https://official-joke-api.appspot.com" }
+  - { name: zippopotam,      control_plane: eapim-internal-dev, upstream: "https://api.zippopotam.us" }
