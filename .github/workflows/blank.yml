@@ -1,0 +1,83 @@
+name: Deploy local Docker DP and onboard APIs
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: kong-local-docker
+  cancel-in-progress: false
+defaults:
+  run:
+    shell: bash
+env:
+  TF_IN_AUTOMATION: "true"
+  KONNECT_SPAT: ${{ secrets.KONNECT_SPAT_DEV }}
+  TF_VAR_client_passwords: ${{ secrets.CLIENT_PASSWORDS_DEV }}
+  TF_VAR_deployment_marker: ${{ github.run_id }}-${{ github.run_attempt }}
+jobs:
+  plan:
+    if: github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, kong-local]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.13.5
+          terraform_wrapper: false
+      - name: Plan on your local machine
+        run: |
+          set -euo pipefail
+          umask 077
+          test -n "$KONNECT_SPAT"
+          test -n "$TF_VAR_client_passwords"
+          docker info > /dev/null
+          docker compose version
+          source scripts/local-init.sh
+          terraform fmt -check -recursive
+          terraform -chdir=terraform validate
+          terraform -chdir=terraform plan -input=false -lock-timeout=5m             -var-file=environments/dev.tfvars -out=onboarding.tfplan
+          terraform -chdir=terraform show -no-color onboarding.tfplan > plan.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: local-plan-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            terraform/onboarding.tfplan
+            plan.txt
+          retention-days: 1
+  deploy:
+    needs: plan
+    runs-on: [self-hosted, kong-local]
+    environment: local-dev
+    env:
+      KONNECT_CP_HOST: ${{ vars.KONNECT_CP_HOST }}
+      KONNECT_TP_HOST: ${{ vars.KONNECT_TP_HOST }}
+      KONG_IMAGE: ${{ vars.KONG_IMAGE }}
+      KONNECT_CLUSTER_CERT_B64: ${{ secrets.KONNECT_CLUSTER_CERT_B64 }}
+      KONNECT_CLUSTER_KEY_B64: ${{ secrets.KONNECT_CLUSTER_KEY_B64 }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.13.5
+          terraform_wrapper: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: local-plan-${{ github.run_id }}-${{ github.run_attempt }}
+          path: reviewed-plan
+      - name: Deploy persistent local Docker data plane
+        run: python3 scripts/deploy-dataplane.py
+      - name: Apply exact reviewed API plan
+        run: |
+          set -euo pipefail
+          source scripts/local-init.sh
+          terraform -chdir=terraform apply -input=false -lock-timeout=5m             ../reviewed-plan/terraform/onboarding.tfplan
+      - name: Verify current configuration through localhost
+        run: python3 scripts/smoke.py
+      - name: Deployment result
+        run: |
+          echo 'Data plane remains running in local Docker.'
+          echo 'API: http://127.0.0.1:8000/orders/v1'
